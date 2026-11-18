@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171526">
+  <title>Quest Bount | Loja RPG</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="cabecalho">
+    <a class="marca" href="#" aria-label="Quest Bount — início">
+      <span class="logo" aria-hidden="true">🎲</span>
+      <span><strong>Quest Bount</strong><small>Itens para sua próxima aventura</small></span>
+    </a>
+    <div class="acoes">
+      <div class="carrinho" aria-label="Resumo do carrinho">
+        <span aria-hidden="true">🛒</span>
+        <span><strong id="quantidade">0</strong> itens</span>
+        <span class="subtotal-topo"><small>Subtotal</small><strong id="total">R$ 0,00</strong></span>
+      </div>
+      <button class="tema" id="botao-tema" type="button" aria-pressed="false">🌙 <span>Modo escuro</span></button>
+      <a class="tema link-admin" href="cadprodutos.html">Acesso Administrativo</a>
+    </div>
+  </header>
+
+  <section class="banner">
+    <div class="banner-conteudo">
+      <span class="etiqueta">Equipamentos para aventureiros</span>
+      <h1>Sua próxima aventura começa aqui.</h1>
+      <p>Dados, miniaturas e acessórios para deixar sua mesa de RPG ainda mais épica.</p>
+      <a class="botao-banner" href="#produtos">Explorar produtos</a>
+    </div>
+    <div class="banner-dado" aria-hidden="true">🎲</div>
+  </section>
+
+  <main>
+    <section class="vitrine" id="produtos">
+      <div class="titulo-secao">
+        <div><span class="etiqueta">A loja do aventureiro</span><h2>Nossos produtos</h2></div>
+        <p>Escolha seus itens e prepare sua próxima sessão.</p>
+      </div>
+      <p id="status-produtos" class="status-produtos" role="status">Carregando produtos...</p>
+      <div class="produtos" id="lista-produtos"></div>
+    </section>
+  </main>
+
+  <div id="chat-container">
+    <button class="botao-abrir-chat" id="btn-abrir-chat" type="button" aria-expanded="false" aria-controls="janela-chat">🎲 Fale com nosso vendedor</button>
+    <section id="janela-chat" aria-label="Chat do vendedor" hidden>
+      <div class="chat-header">
+        <div><span class="chat-avatar" aria-hidden="true">🤖</span><span><strong>Robô Assistente</strong><small>Quest Bount</small></span></div>
+        <button id="btn-fechar-chat" type="button" aria-label="Fechar chat">✕</button>
+      </div>
+      <nav class="chat-abas" aria-label="Opções do assistente">
+        <button class="aba-chat ativa" type="button" data-aba="atendimento" aria-pressed="true">Atendimento</button>
+        <button class="aba-chat" type="button" data-aba="foto" aria-pressed="false">📷 Foto</button>
+        <button class="aba-chat" type="button" data-aba="frete" aria-pressed="false">📍 Frete</button>
+      </nav>
+      <div id="chat-corpo">
+        <section class="painel-chat" data-painel="atendimento">
+          <div id="chat-mensagens" aria-live="polite">
+            <div class="mensagem robo">Olá, aventureiro! Escolha uma opção acima ou me pergunte sobre nossos produtos.</div>
+          </div>
+        </section>
+        <section class="painel-chat" data-painel="foto" hidden>
+          <div class="painel-conteudo">
+            <h3>Identificar produto</h3>
+            <p>Envie uma foto ou abra a câmera para tentar identificar um produto da loja.</p>
+            <div class="botoes-foto">
+              <button class="botao-ferramenta" id="botao-modelo" type="button">📷 <span id="texto-botao-camera">Abrir câmera</span></button>
+              <label for="imagem-computador" class="botao-ferramenta">🖼️ Escolher foto</label>
+              <input type="file" id="imagem-computador" accept="image/*" hidden>
+            </div>
+            <p id="aviso-camera" role="status" hidden></p>
+            <div id="webcam-container"><video id="camera-video" autoplay playsinline muted hidden></video><img id="imagem-preview" alt="Prévia da imagem selecionada" hidden></div>
+            <div id="acao-identificacao" aria-live="polite"></div>
+          </div>
+        </section>
+        <section class="painel-chat" data-painel="frete" hidden>
+          <div class="painel-conteudo">
+            <h3>Calcular frete</h3>
+            <p>Informe o endereço e a distância do trajeto. O frete custa R$ 4,00 por km.</p>
+            <form id="form-frete">
+              <label for="endereco">Endereço de entrega</label>
+              <input id="endereco" type="text" autocomplete="street-address" placeholder="Rua, número, bairro e cidade" required>
+              <label for="distancia-km">Distância do trajeto (km)</label>
+              <input id="distancia-km" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="Ex.: 12,5" required>
+              <small>Distância máxima para entrega: 100 km.</small>
+              <button class="botao-calcular-frete" type="submit">Calcular frete</button>
+            </form>
+            <p id="status-frete" role="status" aria-live="polite"></p>
+            <div class="resumo-compra">
+              <div class="resumo-linha"><span>Subtotal</span><strong id="subtotal-compra">R$ 0,00</strong></div>
+              <div class="resumo-linha"><span>Distância</span><strong id="distancia-entrega">—</strong></div>
+              <div class="resumo-linha"><span>Frete</span><strong id="frete-entrega">A calcular</strong></div>
+              <div class="resumo-linha resumo-total"><span>Total da compra</span><strong id="total-compra">Calcule o frete</strong></div>
+            </div>
+            <small class="nota-entrega">Origem: Rua Santa Clara, nº 264, Bairro Santa Rita, Guaratinguetá, SP.</small>
+          </div>
+        </section>
+      </div>
+      <form id="form-chat">
+        <input id="mensagem" type="text" placeholder="Digite sua pergunta..." autocomplete="off" required>
+        <button type="submit" aria-label="Enviar mensagem">Enviar</button>
+      </form>
+    </section>
+  </div>
+
+  <footer class="rodape">
+    <p>© 2026 Quest Bount — Todos os direitos reservados.</p>
+    <p>O universo do RPG começa aqui. 🚀</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <script type="module" src="js/script.js"></script>
+</body>
+</html>

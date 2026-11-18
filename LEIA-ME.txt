@@ -1,0 +1,31 @@
+QUEST BOUNT — PACOTE ATUALIZADO
+
+ARQUIVOS
+- index.html: página principal; os produtos são carregados do Firestore.
+- js/script.js: vitrine dinâmica, carrinho, frete, chat e identificação por imagem/câmera.
+- css/style.css: estilos da página principal.
+- cadprodutos.html: login e painel administrativo.
+- firestore.rules: regras necessárias para leitura pública da vitrine e escrita protegida.
+
+COMO INSTALAR
+1. Faça backup dos arquivos atuais.
+2. Substitua os arquivos pelos deste pacote, mantendo a estrutura:
+   index.html
+   cadprodutos.html
+   css/style.css
+   js/script.js
+3. No Firebase Console, abra Firestore Database > Regras.
+4. Publique o conteúdo de firestore.rules.
+5. Hospede o site em um servidor com HTTPS (ou use localhost durante testes).
+6. Abra cadprodutos.html, crie/acesse uma conta e cadastre um produto.
+7. Abra index.html: o produto deverá aparecer na vitrine após o carregamento.
+
+IMPORTANTE
+- A vitrine lê todos os documentos da coleção "itens". Os documentos antigos com usuarioId continuam compatíveis.
+- Produtos com estoque zero não aparecem na vitrine.
+- O carrinho limita a quantidade ao estoque informado no cadastro.
+- O cadastro de imagem aceita URL pública http/https; não faz upload do arquivo para o Firebase.
+- O carrinho e o cálculo de frete são demonstrativos no navegador. Ainda não existe checkout, pagamento, reserva de estoque ou gravação de pedidos.
+- As regras deixam a leitura da coleção "itens" pública para que qualquer visitante veja a vitrine. A criação/edição/exclusão exige autenticação e respeita o dono do documento.
+- A configuração Firebase do projeto foi mantida conforme enviada. Não compartilhe credenciais de contas de usuário.
+- A identificação por câmera usa o modelo Teachable Machine configurado no código. O modelo só reconhecerá classes que correspondam a nomes/categorias dos produtos cadastrados; isso depende das classes treinadas.

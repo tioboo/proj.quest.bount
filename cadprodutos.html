@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quest Bount | Administração</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f7f8fc;color:#292536;font:16px Arial,sans-serif}
+    header{padding:16px 24px;background:#fff;border-bottom:1px solid #e5e1ed}
+    .topo,main{width:min(100% - 32px,1000px);margin:auto}.topo{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .logo{color:#5632a5;font-size:24px;font-weight:bold}main{padding:24px 0}
+    .painel,.item{background:#fff;border:1px solid #e5e1ed;border-radius:12px}
+    .painel{padding:20px;margin-bottom:22px}.login{max-width:430px;margin:45px auto}
+    label{display:block;margin:12px 0 6px;font-weight:bold}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #d9d4e3;border-radius:8px;font:inherit}
+    textarea{min-height:80px;resize:vertical}
+    button{padding:10px 14px;border:0;border-radius:8px;background:#7046c8;color:white;font-weight:bold;cursor:pointer}
+    button:hover{background:#5632a5}button:disabled{opacity:.6;cursor:wait}
+    .secundario{background:#eee8fa;color:#5632a5}.perigo{background:#fff0f2;color:#a52d46}
+    .acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    #formConsulta .acoes input{flex:1;min-width:220px;width:auto}
+    .mensagem,.dica{color:#777}.erro{color:#a52d46}
+    .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+    .item{overflow:hidden}.item img,.sem-imagem{width:100%;height:160px;object-fit:cover;background:#eee8fa}
+    .sem-imagem{display:grid;place-items:center;color:#7046c8;font-size:40px}
+    .info{padding:14px}.categoria{color:#5632a5;font-size:14px;font-weight:bold}
+    [hidden]{display:none!important}
+    @media(max-width:520px){header{padding:14px}.painel{padding:15px}.topo{width:100%}}
+  </style>
+</head>
+<body>
+<header><div class="topo"><div class="logo">Quest Bount</div><button id="sair" class="secundario" type="button" hidden>Sair</button></div></header>
+<main>
+  <section id="areaLogin" class="painel login">
+    <h1>Entrar ou criar conta</h1>
+    <form id="formLogin">
+      <label for="email">E-mail</label><input id="email" type="email" autocomplete="email" required>
+      <label for="senha">Senha</label><input id="senha" type="password" minlength="6" autocomplete="current-password" required>
+      <div class="acoes"><button type="submit">Entrar</button><button id="criarConta" class="secundario" type="button">Criar conta</button></div>
+      <p id="msgLogin" class="mensagem erro" role="status"></p>
+    </form>
+  </section>
+
+  <section id="areaItens" hidden>
+    <div class="painel">
+      <h1 id="tituloForm">Cadastrar item</h1>
+      <form id="formItem">
+        <label for="nome">Nome</label><input id="nome" maxlength="100" required>
+        <label for="categoria">Categoria</label>
+        <select id="categoria" required>
+          <option value="">Selecione</option><option>Livros</option><option>Miniaturas</option><option>Dados</option><option>Escudo do Mestre</option><option>Acessórios</option><option>Outros</option>
+        </select>
+        <label for="descricao">Descrição</label><textarea id="descricao" maxlength="2000" required></textarea>
+        <label for="preco">Preço (R$)</label><input id="preco" type="number" min="0" step="0.01" required>
+        <label for="quantidade">Quantidade em estoque</label><input id="quantidade" type="number" min="0" step="1" required>
+        <label for="imagem">Link público da imagem (opcional)</label><input id="imagem" type="url" placeholder="https://exemplo.com/imagem.jpg">
+        <div class="acoes"><button id="salvar" type="submit">Cadastrar item</button><button id="cancelar" class="secundario" type="button" hidden>Cancelar alteração</button></div>
+        <p id="msgItem" class="mensagem" role="status"></p>
+      </form>
+    </div>
+
+    <form id="formConsulta">
+      <label for="busca">Consultar item pelo nome</label>
+      <div class="acoes"><input id="busca" type="search" maxlength="100" placeholder="Digite o nome ou parte do nome"><button id="consultar" type="submit">Consultar</button><button id="mostrarTodos" class="secundario" type="button">Mostrar todos</button></div>
+    </form>
+    <p id="msgConsulta" class="mensagem" role="status">Digite um nome para buscar ou clique em “Mostrar todos”.</p>
+    <div id="lista" class="grade"></div>
+  </section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqhAlsHXmszXSZHHPVnsSX0PWl0fsqI8",
+  authDomain: "loja-rpg-do-pai.firebaseapp.com",
+  projectId: "loja-rpg-do-pai",
+  storageBucket: "loja-rpg-do-pai.firebasestorage.app",
+  messagingSenderId: "1068677014319",
+  appId: "1:1068677014319:web:39a90d1e92e98dd98db7da"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+let usuario = null;
+let idEditando = null;
+
+function validarImagem(valor) {
+  if (!valor) return "";
+  try {
+    const url = new URL(valor);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch { return ""; }
+}
+
+$("formLogin").addEventListener("submit", async evento => {
+  evento.preventDefault();
+  $("msgLogin").textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, $("email").value.trim(), $("senha").value);
+  } catch (erro) { $("msgLogin").textContent = erro.message; }
+});
+
+$("criarConta").addEventListener("click", async () => {
+  $("msgLogin").textContent = "";
+  if (!$("formLogin").reportValidity()) return;
+  try {
+    await createUserWithEmailAndPassword(auth, $("email").value.trim(), $("senha").value);
+  } catch (erro) { $("msgLogin").textContent = erro.message; }
+});
+
+$("sair").addEventListener("click", () => signOut(auth).catch(erro => alert("Erro ao sair: " + erro.message)));
+
+onAuthStateChanged(auth, user => {
+  usuario = user;
+  $("areaLogin").hidden = !!user;
+  $("areaItens").hidden = !user;
+  $("sair").hidden = !user;
+  $("lista").replaceChildren();
+  $("msgConsulta").textContent = user ? "Digite um nome para buscar ou clique em “Mostrar todos”." : "";
+  if (user) consultarItens();
+  else limparFormulario();
+});
+
+$("formConsulta").addEventListener("submit", consultarItens);
+$("mostrarTodos").addEventListener("click", () => { $("busca").value = ""; consultarItens(); });
+
+async function consultarItens(evento) {
+  evento?.preventDefault();
+  if (!usuario) return;
+  const termo = $("busca").value.trim().toLocaleLowerCase("pt-BR");
+  $("lista").replaceChildren();
+  $("msgConsulta").textContent = "Consultando...";
+  $("consultar").disabled = true;
+  try {
+    const consulta = query(collection(db, "itens"), where("usuarioId", "==", usuario.uid));
+    const resultado = await getDocs(consulta);
+    const itens = resultado.docs.map(registro => ({ id: registro.id, ...registro.data() }));
+    const encontrados = itens.filter(item => String(item.nome || "").toLocaleLowerCase("pt-BR").includes(termo));
+    if (!encontrados.length) {
+      $("msgConsulta").textContent = termo ? "Nenhum item encontrado com esse nome." : "Você ainda não cadastrou itens.";
+      return;
+    }
+    $("msgConsulta").textContent = `${encontrados.length} item(ns) encontrado(s).`;
+    encontrados.forEach(item => $("lista").appendChild(criarCartao(item)));
+  } catch (erro) {
+    $("msgConsulta").textContent = "Erro ao consultar os itens: " + erro.message;
+  } finally { $("consultar").disabled = false; }
+}
+
+$("formItem").addEventListener("submit", async evento => {
+  evento.preventDefault();
+  $("msgItem").textContent = "";
+  $("salvar").disabled = true;
+  const editando = idEditando !== null;
+  try {
+    const link = $("imagem").value.trim();
+    const imagemUrl = validarImagem(link);
+    if (link && !imagemUrl) throw new Error("Informe um link de imagem válido com http:// ou https://.");
+    const preco = Number($("preco").value);
+    const quantidade = Number($("quantidade").value);
+    if (!Number.isFinite(preco) || preco < 0) throw new Error("Informe um preço válido.");
+    if (!Number.isInteger(quantidade) || quantidade < 0) throw new Error("Informe uma quantidade inteira válida.");
+
+    const dados = {
+      nome: $("nome").value.trim(), categoria: $("categoria").value,
+      descricao: $("descricao").value.trim(), preco, quantidade, imagemUrl,
+      usuarioId: usuario.uid
+    };
+    if (editando) {
+      await updateDoc(doc(db, "itens", idEditando), { ...dados, atualizadoEm: serverTimestamp() });
+    } else {
+      await addDoc(collection(db, "itens"), { ...dados, criadoEm: serverTimestamp() });
+    }
+    limparFormulario();
+    $("msgItem").textContent = editando ? "Item alterado com sucesso!" : "Item cadastrado com sucesso!";
+    await consultarItens();
+  } catch (erro) {
+    $("msgItem").textContent = erro.message || "Não foi possível salvar o item.";
+  } finally {
+    $("salvar").disabled = false;
+    $("salvar").textContent = idEditando ? "Salvar alteração" : "Cadastrar item";
+  }
+});
+
+function criarCartao(item) {
+  const cartao = document.createElement("article");
+  cartao.className = "item";
+  const imagemUrl = validarImagem(item.imagemUrl || "");
+  if (imagemUrl) {
+    const imagem = document.createElement("img");
+    imagem.src = imagemUrl; imagem.alt = item.nome || "Imagem do item"; imagem.loading = "lazy";
+    imagem.addEventListener("error", () => imagem.replaceWith(criarSemImagem()), { once: true });
+    cartao.appendChild(imagem);
+  } else cartao.appendChild(criarSemImagem());
+
+  const info = document.createElement("div"); info.className = "info";
+  const categoria = document.createElement("div"); categoria.className = "categoria"; categoria.textContent = item.categoria || "";
+  const nome = document.createElement("h3"); nome.textContent = item.nome || "";
+  const descricao = document.createElement("p"); descricao.textContent = item.descricao || "";
+  const detalhes = document.createElement("p");
+  detalhes.textContent = `${Number(item.preco || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · Estoque: ${item.quantidade ?? 0}`;
+  const botoes = document.createElement("div"); botoes.className = "acoes";
+  const alterar = document.createElement("button"); alterar.type = "button"; alterar.className = "secundario"; alterar.textContent = "Alterar"; alterar.addEventListener("click", () => iniciarAlteracao(item));
+  const remover = document.createElement("button"); remover.type = "button"; remover.className = "perigo"; remover.textContent = "Remover"; remover.addEventListener("click", () => removerItem(item));
+  botoes.append(alterar, remover); info.append(categoria, nome, descricao, detalhes, botoes); cartao.appendChild(info);
+  return cartao;
+}
+
+function criarSemImagem() {
+  const elemento = document.createElement("div");
+  elemento.className = "sem-imagem"; elemento.textContent = "✦";
+  return elemento;
+}
+
+function iniciarAlteracao(item) {
+  idEditando = item.id;
+  $("nome").value = item.nome || ""; $("categoria").value = item.categoria || "";
+  $("descricao").value = item.descricao || ""; $("preco").value = item.preco ?? "";
+  $("quantidade").value = item.quantidade ?? ""; $("imagem").value = validarImagem(item.imagemUrl || "");
+  $("tituloForm").textContent = "Alterar item"; $("salvar").textContent = "Salvar alteração";
+  $("cancelar").hidden = false; $("msgItem").textContent = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function removerItem(item) {
+  if (!confirm(`Remover "${item.nome}"?`)) return;
+  try {
+    await deleteDoc(doc(db, "itens", item.id));
+    if (idEditando === item.id) limparFormulario();
+    await consultarItens();
+  } catch (erro) { $("msgConsulta").textContent = "Erro ao remover o item: " + erro.message; }
+}
+
+function limparFormulario() {
+  $("formItem").reset(); idEditando = null;
+  $("tituloForm").textContent = "Cadastrar item"; $("salvar").textContent = "Cadastrar item";
+  $("cancelar").hidden = true;
+}
+$("cancelar").addEventListener("click", () => { limparFormulario(); $("msgItem").textContent = ""; });
+</script>
+</body>
+</html>
