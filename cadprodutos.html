@@ -37,6 +37,7 @@
       <label for="email">E-mail</label><input id="email" type="email" autocomplete="email" required>
       <label for="senha">Senha</label><input id="senha" type="password" minlength="6" autocomplete="current-password" required>
       <div class="acoes"><button type="submit">Entrar</button><button id="criarConta" class="secundario" type="button">Criar conta</button></div>
+      <button id="entrarGoogle" class="secundario" type="button" style="width:100%;margin-top:10px">Entrar com Google</button>
       <p id="msgLogin" class="mensagem erro" role="status"></p>
     </form>
   </section>
@@ -70,7 +71,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -110,6 +111,13 @@ $("criarConta").addEventListener("click", async () => {
   try {
     await createUserWithEmailAndPassword(auth, $("email").value.trim(), $("senha").value);
   } catch (erro) { $("msgLogin").textContent = erro.message; }
+});
+
+$("entrarGoogle").addEventListener("click", async () => {
+  $("msgLogin").textContent = "";
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (erro) { $("msgLogin").textContent = erro.message || "Não foi possível entrar com Google."; }
 });
 
 $("sair").addEventListener("click", () => signOut(auth).catch(erro => alert("Erro ao sair: " + erro.message)));

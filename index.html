@@ -80,13 +80,13 @@
         <section class="painel-chat" data-painel="frete" hidden>
           <div class="painel-conteudo">
             <h3>Calcular frete</h3>
-            <p>Informe o endereço e a distância do trajeto. O frete custa R$ 4,00 por km.</p>
+            <p>Informe seu endereço completo e o CEP. A distância e o preço serão calculados automaticamente apenas pelo CEP.</p>
             <form id="form-frete">
               <label for="endereco">Endereço de entrega</label>
               <input id="endereco" type="text" autocomplete="street-address" placeholder="Rua, número, bairro e cidade" required>
-              <label for="distancia-km">Distância do trajeto (km)</label>
-              <input id="distancia-km" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="Ex.: 12,5" required>
-              <small>Distância máxima para entrega: 100 km.</small>
+              <label for="cep-destino">CEP de entrega</label>
+              <input id="cep-destino" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000" pattern="[0-9]{5}-?[0-9]{3}" required>
+              <small>Origem: CEP 12502-112. R$ 4,00 por km. Distância máxima: 100 km.</small>
               <button class="botao-calcular-frete" type="submit">Calcular frete</button>
             </form>
             <p id="status-frete" role="status" aria-live="polite"></p>
@@ -96,7 +96,7 @@
               <div class="resumo-linha"><span>Frete</span><strong id="frete-entrega">A calcular</strong></div>
               <div class="resumo-linha resumo-total"><span>Total da compra</span><strong id="total-compra">Calcule o frete</strong></div>
             </div>
-            <small class="nota-entrega">Origem: Rua Santa Clara, nº 264, Bairro Santa Rita, Guaratinguetá, SP.</small>
+            <small class="nota-entrega">O preço considera somente o CEP de origem 12502-112 e o CEP de destino. O endereço completo é mantido para identificação da entrega e não altera o valor.</small>
           </div>
         </section>
       </div>

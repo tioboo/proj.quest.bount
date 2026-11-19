@@ -17,6 +17,7 @@ const db = getFirestore(app);
 const $ = id => document.getElementById(id);
 const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const PRECO_KM = 400; // centavos por quilômetro
+const CEP_ORIGEM = "12502112";
 const URL_MODELO = "https://teachablemachine.withgoogle.com/models/AA5GX0PlL/";
 
 let produtos = [];
@@ -193,39 +194,111 @@ $("btn-fechar-chat").addEventListener("click", () => {
   pararCamera();
 });
 
-$("form-frete").addEventListener("submit", evento => {
-  evento.preventDefault();
-  const distancia = Number($("distancia-km").value);
-  const status = $("status-frete");
+async function consultarJSON(url) {
+  const resposta = await fetch(url);
+  if (!resposta.ok) throw new Error("Não foi possível consultar o serviço de localização.");
+  return resposta.json();
+}
 
-  if (!qtdTotal()) {
-    status.textContent = "Adicione um produto ao carrinho antes de calcular o frete.";
-    return;
-  }
-  if (!$("endereco").value.trim() || !Number.isFinite(distancia) || distancia < 0) {
-    status.textContent = "Informe o endereço e uma distância válida.";
-    return;
-  }
-  $("distancia-entrega").textContent = `${distancia.toLocaleString("pt-BR")} km`;
-  if (distancia > 100) {
-    frete = null;
-    $("frete-entrega").textContent = $("total-compra").textContent = "Indisponível";
-    status.textContent = "Não é possível entregar acima de 100 km.";
-    return;
-  }
-  frete = Math.round(distancia * PRECO_KM);
-  $("frete-entrega").textContent = moeda.format(frete / 100);
-  $("total-compra").textContent = moeda.format((subtotal() + frete) / 100);
-  status.textContent = "Frete calculado com sucesso.";
-});
+async function localizarCep(cep) {
+  const dados = await consultarJSON(`https://viacep.com.br/ws/${cep}/json/`);
+  if (dados.erro) throw new Error(`O CEP ${cep} não foi encontrado.`);
+  return dados;
+}
 
-["endereco", "distancia-km"].forEach(id => $(id).addEventListener("input", () => {
+const cacheCoordenadas = new Map();
+let ultimaConsultaGeocodificacao = 0;
+
+async function geocodificarCep(cep, dadosCep) {
+  if (cacheCoordenadas.has(cep)) return cacheCoordenadas.get(cep);
+  const parametros = new URLSearchParams({
+    postalcode: cep,
+    city: dadosCep.localidade || "",
+    state: dadosCep.uf || "",
+    country: "Brazil",
+    countrycodes: "br",
+    format: "jsonv2",
+    limit: "1"
+  });
+  const espera = Math.max(0, 1100 - (Date.now() - ultimaConsultaGeocodificacao));
+  if (espera) await new Promise(resolve => window.setTimeout(resolve, espera));
+  ultimaConsultaGeocodificacao = Date.now();
+  const resultados = await consultarJSON(`https://nominatim.openstreetmap.org/search?${parametros}`);
+  if (!resultados.length) throw new Error(`Não foi possível localizar o CEP ${cep} no mapa.`);
+  const ponto = { lat: Number(resultados[0].lat), lon: Number(resultados[0].lon) };
+  cacheCoordenadas.set(cep, ponto);
+  return ponto;
+}
+
+async function calcularDistanciaPorCep(cepDestino) {
+  const origemDados = await localizarCep(CEP_ORIGEM);
+  const destinoDados = await localizarCep(cepDestino);
+  const origem = await geocodificarCep(CEP_ORIGEM, origemDados);
+  const destino = await geocodificarCep(cepDestino, destinoDados);
+  const rota = await consultarJSON(
+    `https://router.project-osrm.org/route/v1/driving/${origem.lon},${origem.lat};${destino.lon},${destino.lat}?overview=false&alternatives=false&steps=false`
+  );
+  if (rota.code !== "Ok" || !rota.routes?.length) {
+    throw new Error("Não foi possível calcular uma rota para esse CEP.");
+  }
+  return rota.routes[0].distance / 1000;
+}
+
+function limparFrete() {
   frete = null;
   $("distancia-entrega").textContent = "—";
   $("frete-entrega").textContent = "A calcular";
   $("total-compra").textContent = "Calcule o frete";
   $("status-frete").textContent = "";
-}));
+}
+
+$("form-frete").addEventListener("submit", async evento => {
+  evento.preventDefault();
+  const status = $("status-frete");
+  const botao = $("form-frete").querySelector('button[type="submit"]');
+  const cep = $("cep-destino").value.replace(/\D/g, "");
+
+  if (!qtdTotal()) {
+    status.textContent = "Adicione um produto ao carrinho antes de calcular o frete.";
+    return;
+  }
+  if (!$("endereco").value.trim() || !/^\d{8}$/.test(cep)) {
+    status.textContent = "Informe o endereço completo e um CEP válido.";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Calculando...";
+  status.textContent = "Localizando os CEPs e calculando a rota...";
+  try {
+    const distancia = await calcularDistanciaPorCep(cep);
+    $("distancia-entrega").textContent = `${distancia.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km`;
+    if (distancia > 100) {
+      frete = null;
+      $("frete-entrega").textContent = $("total-compra").textContent = "Indisponível";
+      status.textContent = "Não é possível entregar acima de 100 km.";
+      return;
+    }
+    frete = Math.round(distancia * PRECO_KM);
+    $("frete-entrega").textContent = moeda.format(frete / 100);
+    $("total-compra").textContent = moeda.format((subtotal() + frete) / 100);
+    status.textContent = "Frete calculado pelo CEP. O endereço informado não altera o preço.";
+  } catch (erro) {
+    frete = null;
+    $("distancia-entrega").textContent = "—";
+    $("frete-entrega").textContent = $("total-compra").textContent = "Indisponível";
+    status.textContent = erro.message || "Não foi possível calcular o frete. Tente novamente.";
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Calcular frete";
+  }
+});
+
+["endereco", "cep-destino"].forEach(id => $(id).addEventListener("input", limparFrete));
+$("cep-destino").addEventListener("input", evento => {
+  const numeros = evento.target.value.replace(/\D/g, "").slice(0, 8);
+  evento.target.value = numeros.length > 5 ? `${numeros.slice(0, 5)}-${numeros.slice(5)}` : numeros;
+});
 
 function adicionarMensagem(texto, tipo) {
   const div = document.createElement("div");
@@ -236,8 +309,22 @@ function adicionarMensagem(texto, tipo) {
 }
 
 function responder(texto) {
-  const pergunta = texto.toLocaleLowerCase("pt-BR");
-  if (pergunta.includes("frete")) return "O frete custa R$ 4,00 por km, para entregas de até 100 km.";
+  const pergunta = texto.toLocaleLowerCase("pt-BR").trim();
+  if (/\b(normal|original|padr[aã]o)\b/.test(pergunta) || /voltar ao (tema )?(normal|original|padr[aã]o)/.test(pergunta)) {
+    document.body.classList.remove("tema-matrix", "tema-starwars");
+    return "Tema padrão restaurado. Tudo como antes!";
+  }
+  if (/\bmatrix\b/i.test(pergunta)) {
+    document.body.classList.remove("tema-starwars");
+    document.body.classList.add("tema-matrix");
+    return "Modo Matrix ativado. Bem-vindo à realidade.";
+  }
+  if (/\bstar\s*wars\b/i.test(pergunta)) {
+    document.body.classList.remove("tema-matrix");
+    document.body.classList.add("tema-starwars");
+    return "Modo Star Wars ativado. Que a Força esteja com você.";
+  }
+  if (pergunta.includes("frete")) return "O frete é calculado pela distância da rota entre o CEP da loja (12502-112) e o CEP de destino: R$ 4,00 por km, para entregas de até 100 km.";
   const encontrados = produtos.filter(item =>
     `${item.nome || ""} ${item.categoria || ""}`.toLocaleLowerCase("pt-BR").split(/\s+/)
       .some(palavra => palavra.length > 2 && pergunta.includes(palavra))

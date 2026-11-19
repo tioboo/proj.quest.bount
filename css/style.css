@@ -120,3 +120,45 @@ body.modo-escuro #form-frete input, body.modo-escuro #form-chat input { backgrou
   #chat-container { right: 10px; bottom: 10px; }
   #janela-chat { height: min(640px,calc(100vh - 82px)); }
 }
+
+
+/* Temas secretos do Robô Assistente */
+body.tema-matrix, body.tema-starwars {
+  color-scheme: dark;
+  --fundo: #000;
+  --superficie: #000;
+  --suave: #080808;
+  --borda: currentColor;
+  --sombra: none;
+  background: #000;
+}
+body.tema-matrix, body.tema-matrix * { color: #39ff14; border-color: #167a08; }
+body.tema-starwars, body.tema-starwars * { color: #ff3030; border-color: #8b1010; }
+body.tema-matrix .logo, body.tema-starwars .logo,
+body.tema-matrix button, body.tema-starwars button,
+body.tema-matrix .botao-banner, body.tema-starwars .botao-banner {
+  color: currentColor; background: #000; border: 1px solid currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+body.tema-matrix .banner, body.tema-starwars .banner,
+body.tema-matrix .produto, body.tema-starwars .produto,
+body.tema-matrix .carrinho, body.tema-starwars .carrinho,
+body.tema-matrix #janela-chat, body.tema-starwars #janela-chat,
+body.tema-matrix .painel-chat, body.tema-starwars .painel-chat,
+body.tema-matrix .rodape, body.tema-starwars .rodape { background: #000; }
+body.tema-matrix input, body.tema-matrix textarea,
+body.tema-starwars input, body.tema-starwars textarea {
+  color: currentColor; background: #000; border: 1px solid currentColor;
+}
+body.tema-matrix img, body.tema-starwars img { filter: grayscale(1) contrast(1.1); }
+
+/* Correção e reforço dos temas secretos ativados pelo Robô Assistente */
+body.tema-matrix, body.tema-starwars { background: #000 !important; }
+body.tema-matrix :is(header, main, section, article, footer, nav, aside, #chat-container, #janela-chat, .painel-conteudo, .chat-abas, #chat-mensagens, #form-chat),
+body.tema-starwars :is(header, main, section, article, footer, nav, aside, #chat-container, #janela-chat, .painel-conteudo, .chat-abas, #chat-mensagens, #form-chat) { background-color: #000 !important; }
+body.tema-matrix :is(p, span, small, strong, h1, h2, h3, h4, label, a, li, button, input, textarea, div),
+body.tema-matrix :is(p, span, small, strong, h1, h2, h3, h4, label, a, li, button, input, textarea) { color: #39ff14 !important; }
+body.tema-starwars :is(p, span, small, strong, h1, h2, h3, h4, label, a, li, button, input, textarea, div),
+body.tema-starwars :is(p, span, small, strong, h1, h2, h3, h4, label, a, li, button, input, textarea) { color: #ff3030 !important; }
+body.tema-matrix :is(button, input, textarea, .produto, .resumo-compra, .mensagem),
+body.tema-starwars :is(button, input, textarea, .produto, .resumo-compra, .mensagem) { background: #000 !important; border-color: currentColor !important; box-shadow: 0 0 7px currentColor; }
